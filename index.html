@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Must Burst</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="game-container">
+    
+    <!-- メニュー画面 -->
+    <div id="screen-menu" class="screen active">
+      <div class="menu-center">
+        <h1 class="game-title">Must Burst</h1>
+        <p class="coin-display">所持金: <span id="menu-coins">1000</span> G</p>
+        <div class="menu-buttons">
+          <button onclick="changeScreen('screen-stage-select')">ステージ選択へ</button>
+          <button onclick="changeScreen('screen-collection')">コレクション</button>
+          <button onclick="changeScreen('screen-gacha')">新・玉ガチャ</button>
+          <button onclick="changeScreen('screen-settings')">設定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ステージ選択画面 -->
+    <div id="screen-stage-select" class="screen">
+      <h2>ステージを選択</h2>
+      <p>クリアしたステージまで遊べます</p>
+      <div id="stage-buttons" class="stage-grid"></div>
+      <button class="back-btn" onclick="changeScreen('screen-menu')">メニューへ戻る</button>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <div id="screen-game" class="screen">
+      <div class="status-panel">
+        <p>STAGE: <span id="stage-display">1</span></p>
+        <p>残り弾数: <span id="shots-left" style="color:#ff4757; font-size:1.2rem;">3</span></p>
+        <p>所持金: <span id="game-coins">1000</span> G</p>
+      </div>
+      
+      <canvas id="gameCanvas" width="500" height="300"></canvas>
+      
+      <div class="controls">
+        <p id="gauge-instruction">ボタンで「角度」を決定！</p>
+        <button id="action-btn">デコピン準備！</button>
+        <button class="back-btn" onclick="changeScreen('screen-stage-select')">逃げる</button>
+      </div>
+
+      <!-- デコピン強化パネル -->
+      <div class="upgrade-panel">
+        <h3>💪 指の強化（デコピン力）</h3>
+        <div class="upgrade-item">
+          <span>攻撃力 Lv.<span id="power-lv">1</span> (+<span id="power-bonus">0</span>%)</span>
+          <button id="btn-up-power">強化 (<span id="cost-power">100</span>G)</button>
+        </div>
+        <div class="upgrade-item">
+          <span>弾き速度 Lv.<span id="speed-lv">1</span> (+<span id="speed-bonus">0</span>%)</span>
+          <button id="btn-up-speed">強化 (<span id="cost-speed">100</span>G)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- コレクション画面 -->
+    <div id="screen-collection" class="screen">
+      <h2>コレクション</h2>
+      <p>手に入れた玉をデコピンの弾に設定します</p>
+      <div id="collection-list" class="collection-list"></div>
+      <button class="back-btn" onclick="changeScreen('screen-menu')">メニューへ戻る</button>
+    </div>
+
+    <!-- ガチャ画面 -->
+    <div id="screen-gacha" class="screen">
+      <h2>新・玉ガチャ</h2>
+      <p>1回 1000G | 所持金: <span id="gacha-coins">1000</span> G</p>
+      <div class="gacha-machine">
+        <div id="gacha-capsule" class="capsule">❓</div>
+      </div>
+      <div class="gacha-result" id="gacha-result">デコピンの弾を引こう！</div>
+      <button id="gacha-btn" class="gacha-btn">ガチャを回す！</button>
+      <br>
+      <button class="back-btn" onclick="changeScreen('screen-menu')">メニューへ戻る</button>
+    </div>
+
+    <!-- 設定画面（名前と音量スライダー復活） -->
+    <div id="screen-settings" class="screen">
+      <h2>設定</h2>
+      <div class="setting-item">
+        <label>プレイヤー名:</label>
+        <input type="text" id="player-name" placeholder="名前を入力">
+      </div>
+      <div class="setting-item">
+        <label>音量 (BGM・効果音):</label>
+        <input type="range" id="bgm-volume" min="0" max="100" value="50">
+      </div>
+      <button id="save-settings-btn">設定を保存</button>
+      <br>
+      <button class="back-btn" onclick="changeScreen('screen-menu')">メニューへ戻る</button>
+    </div>
+
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
