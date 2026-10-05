@@ -16,24 +16,26 @@ const ballsData = [
 ];
 
 const defaultData = {
-  coins: 1000,
-  collection: ['boro'],
+  coins: 0, // 初期所持金0
+  collection: ['boro'], // 最初はたまごボーロだけ
   equipped: 'boro',
   playerName: '名無し',
   bgmVol: 50,
   powerLv: 1,
   speedLv: 1,
-  maxStage: 1
+  maxStage: 1 // 最初はステージ1のみ
 };
 
 let savedData = JSON.parse(localStorage.getItem('mustBurstData')) || {};
 let userData = { ...defaultData, ...savedData };
+
+// 初回などでデータが汚れていた場合の強制初期化保証
 if (!userData.collection || userData.collection.length === 0) userData.collection = ['boro'];
 if (!userData.maxStage) userData.maxStage = 1;
 
 function saveData() { localStorage.setItem('mustBurstData', JSON.stringify(userData)); }
 
-// --- 2. サウンドシステム（キラキラ効果音＆ファンファーレ追加） ---
+// --- 2. サウンドシステム ---
 let audioCtx = null;
 let bgmInterval = null;
 
@@ -73,7 +75,6 @@ function playSE(type) {
     gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
     osc.start(); osc.stop(audioCtx.currentTime + 0.2);
   } else if (type === 'sparkle') {
-    // キラキラん！！！！！音
     const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
     notes.forEach((freq, idx) => {
       const o = audioCtx.createOscillator();
@@ -87,7 +88,6 @@ function playSE(type) {
       o.stop(audioCtx.currentTime + idx * 0.06 + 0.25);
     });
   } else if (type === 'clear') {
-    // クリアファンファーレ
     const cNotes = [523.25, 659.25, 783.99, 1046.50];
     cNotes.forEach((freq, idx) => {
       const o = audioCtx.createOscillator();
@@ -148,7 +148,7 @@ function changeScreen(screenId) {
   else if (screenId === 'screen-game') playBGM('game');
 }
 
-// マリオカート風の10段階インジケーター生成関数
+// 10段階インジケーター生成（数字は表示しない）
 function createStatBar(val, maxVal) {
   const ratio = Math.min(1, Math.max(0, val / maxVal));
   const filledCount = Math.round(ratio * 10);
@@ -164,7 +164,6 @@ function updateUI() {
   document.getElementById('game-coins').textContent = userData.coins;
   document.getElementById('gacha-coins').textContent = userData.coins;
   
-  // ガチャ画面の所持数表示 (〇 / □)
   const gachaCountEl = document.getElementById('gacha-collection-count');
   if (gachaCountEl) {
     gachaCountEl.textContent = `${userData.collection.length} / ${ballsData.length}`;
@@ -181,11 +180,10 @@ function updateUI() {
   document.getElementById('player-name').value = userData.playerName || '名無し';
   document.getElementById('bgm-volume').value = userData.bgmVol;
 
-  // キャラ選択画面（マリオカート風ステータス ＆ 所持数 ＆ 確認ダイアログつき）
+  // キャラ選択画面（数字を省いたメーター表示 ＆ 確認ダイアログ付き）
   const collectionList = document.getElementById('collection-list');
   collectionList.innerHTML = '';
   
-  // ヘッダーに所持数を表示
   const headerInfo = document.createElement('div');
   headerInfo.style.marginBottom = '10px';
   headerInfo.style.fontWeight = 'bold';
@@ -206,7 +204,6 @@ function updateUI() {
     if (!hasBall) {
       card.innerHTML = `<span style="color:#aaa;">🔒 ??? (未所持)</span>`;
     } else {
-      // マリオカート風指標 (スピード max:2.5, アタック max:8.0, ウェイト max:5.0 を10段階に換算)
       const speedBar = createStatBar(ball.speed, 2.5);
       const atkBar = createStatBar(ball.atkMulti, 8.0);
       const weightBar = createStatBar(ball.weight, 5.0);
@@ -220,16 +217,15 @@ function updateUI() {
           </button>
         </div>
         <div style="font-size:0.8rem; margin-top:6px; color:#ddd; font-family:monospace;">
-          スピード: ${speedBar} (${ball.speed})<br>
-          攻撃力 : ${atkBar} (${ball.atkMulti}倍)<br>
-          重さ  : ${weightBar} (${ball.weight})
+          スピード: ${speedBar}<br>
+          攻撃力 : ${atkBar}<br>
+          重さ  : ${weightBar}
         </div>
       `;
     }
     collectionList.appendChild(card);
   });
 
-  // キャラ選択ボタンのイベント設定（確認ダイアログ付き）
   document.querySelectorAll('.select-ball-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const ballId = e.target.getAttribute('data-id');
@@ -254,20 +250,30 @@ document.getElementById('save-settings-btn').addEventListener('click', () => {
 
 function getUpgradeCost(lv) { return Math.floor(100 * Math.pow(1.3, lv - 1)); }
 
+// 強化画面：Gが足りないときのお馴染み大人なセリフ
 document.getElementById('btn-up-power').addEventListener('click', () => {
   const cost = getUpgradeCost(userData.powerLv);
-  if (userData.coins >= cost) { userData.coins -= cost; userData.powerLv++; saveData(); updateUI(); }
+  if (userData.coins < cost) {
+    alert('「世の中、そんなに甘くないんだよ。お金を貯めてから出直してきな」');
+    return;
+  }
+  userData.coins -= cost; userData.powerLv++; saveData(); updateUI();
 });
 document.getElementById('btn-up-speed').addEventListener('click', () => {
   const cost = getUpgradeCost(userData.speedLv);
-  if (userData.coins >= cost) { userData.coins -= cost; userData.speedLv++; saveData(); updateUI(); }
+  if (userData.coins < cost) {
+    alert('「フッ…世知辛い世の中だな。財布が軽すぎるぞ、出直してきな」');
+    return;
+  }
+  userData.coins -= cost; userData.speedLv++; saveData(); updateUI();
 });
 
-// --- ガチャ処理（確率カスタム＆キラキラ＆確認ダイアログ＆確率表） ---
+// --- ガチャ処理 ---
 document.getElementById('gacha-btn').addEventListener('click', () => {
-  if (userData.coins < 1000) { alert('Gが足りません！'); return; }
+  if (userData.coins < 1000) { alert('「Gが足りないようだな…甘えるんじゃないよ」'); return; }
   
-  if (!confirm('ガチャを引くには1000G使用しますがよろしいですか？')) {
+  // メッセージを「本当によろしいでしょうか？」に変更
+  if (!confirm('本当によろしいでしょうか？')) {
     return;
   }
 
@@ -281,16 +287,14 @@ document.getElementById('gacha-btn').addEventListener('click', () => {
   capsule.classList.add('capsule-pop');
 
   setTimeout(() => {
-    playSE('sparkle'); // キラキラん！！！！音
+    playSE('sparkle'); 
 
-    // 確率抽選ロジック
-    // シークレット各1% (計2%)、ハイパーレア各10% (計20%)、残りをノーマルで均等割り
     const rand = Math.random() * 100;
     let pool = [];
     if (rand < 1) {
       pool = ballsData.filter(b => b.rarity === 'secret');
     } else if (rand < 2) {
-      pool = ballsData.filter(b => b.rarity === 'secret'); // 2個目のシークレット用
+      pool = ballsData.filter(b => b.rarity === 'secret');
     } else if (rand < 12) {
       pool = ballsData.filter(b => b.id === 'globe');
     } else if (rand < 22) {
@@ -313,10 +317,10 @@ document.getElementById('gacha-btn').addEventListener('click', () => {
   }, 1000);
 });
 
-// 確率表モーダル表示ボタン
+// 確率表ボタンを「ガチャを回す！」の下に設置 ＆ シークレット名を「？？？」に
 const gachaScreen = document.getElementById('screen-gacha');
 const probBtn = document.createElement('button');
-probBtn.textContent = "📊 ガチャ確率表を見る";
+probBtn.textContent = "📊 ガチャ確率表";
 probBtn.style.marginTop = "10px";
 probBtn.style.padding = "8px 15px";
 probBtn.style.backgroundColor = "#3742fa";
@@ -324,12 +328,13 @@ probBtn.style.color = "#fff";
 probBtn.style.border = "none";
 probBtn.style.borderRadius = "5px";
 probBtn.style.cursor = "pointer";
+
 probBtn.onclick = () => {
   alert(
     "【 ガチャ確率表 】\n\n" +
     "💎 シークレット枠 (各1%)\n" +
-    "・ダイアモンド (1%)\n" +
-    "・睾丸 (1%)\n\n" +
+    "・？？？ (1%)\n" +
+    "・？？？ (1%)\n\n" +
     "🪐 ハイパーレア枠 (各10%)\n" +
     "・地球儀 (10%)\n" +
     "・隕石 (10%)\n\n" +
@@ -337,10 +342,12 @@ probBtn.onclick = () => {
     "・たまごボーロ / ピンポン玉 / 野球ボール / テニス玉 / ボウリングの玉 / ドッヂボール / フリスビー / 鼻くそ / ソフトボール"
   );
 };
-// ガチャボタンのすぐ下付近に挿入
-const gachaBox = document.querySelector('#screen-gacha > div');
-if (gachaBox) gachaBox.appendChild(probBtn);
 
+// 「ガチャを回す！」ボタン（#gacha-btn）の直下に挿入
+const gachaMainBtn = document.getElementById('gacha-btn');
+if (gachaMainBtn && gachaMainBtn.parentNode) {
+  gachaMainBtn.parentNode.insertBefore(probBtn, gachaMainBtn.nextSibling);
+}
 
 // --- 4. ステージ選択機能 ---
 function generateStageButtons() {
@@ -368,7 +375,7 @@ function generateStageButtons() {
   }
 }
 
-// --- 5. ゲームロジック（新敵「ビル」＆クリア演出追加） ---
+// --- 5. ゲームロジック ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const actionBtn = document.getElementById('action-btn');
@@ -387,7 +394,7 @@ let lastActionTime = 0;
 const enemyTypes = [
   { id: 'slime', name: 'スライム', hpMult: 1.0, w: 30, h: 40, color: '#2ecc71', hpCost: 1 },
   { id: 'brick', name: 'レンガ', hpMult: 2.5, w: 40, h: 40, color: '#e67e22', hpCost: 2 },
-  { id: 'building', name: 'ビル', hpMult: 4.0, w: 45, h: 80, color: '#95a5a6', hpCost: 2 }, // ステージ7から登場する背の高いビル
+  { id: 'building', name: 'ビル', hpMult: 4.0, w: 45, h: 80, color: '#95a5a6', hpCost: 2 }, 
   { id: 'earth', name: '地球', hpMult: 10.0, w: 100, h: 100, color: '#1e90ff', hpCost: 3 }
 ];
 
@@ -400,13 +407,13 @@ function generateDungeon() {
   let totalRequiredShots = 0;
 
   for (let i = 0; i < numEnemies; i++) {
-    let type = enemyTypes[0]; // スライム
+    let type = enemyTypes[0]; 
     if (isBossStage) {
-      type = enemyTypes[3]; // 地球（ボス）
+      type = enemyTypes[3]; 
     } else if (currentStage >= 7 && Math.random() > 0.4) {
-      type = enemyTypes[2]; // ビル (ステージ7以降)
+      type = enemyTypes[2]; 
     } else if (currentStage > 2 && Math.random() > 0.5) {
-      type = enemyTypes[1]; // レンガ
+      type = enemyTypes[1]; 
     } 
     
     targets.push({
@@ -423,7 +430,6 @@ function generateDungeon() {
     totalRequiredShots += type.hpCost;
   }
 
-  // 「スライムは1体に対し玉1発、レンガとビルは2発」の計算に基づいた必要弾数 ＋ 余裕分
   shotsLeft = totalRequiredShots + 2;
   document.getElementById('shots-left').textContent = shotsLeft;
   document.getElementById('stage-display').textContent = `${currentStage}-${currentSubStage}`;
@@ -509,7 +515,7 @@ function updatePhysics() {
         actionBtn.disabled = false;
       } else {
         gameState = 'FINISH';
-        playSE('clear'); // クリアファン fanfare
+        playSE('clear'); 
         if (currentStage === userData.maxStage) {
           userData.maxStage++;
           saveData();
@@ -591,7 +597,6 @@ function draw() {
     ctx.fillRect(10, 10, Math.max(0, power) * 1.5, 10);
   }
 
-  // ステージ完全クリア時の中央黄色文字演出 (CONGRATULATIONS!!)
   if (gameState === 'FINISH' && targets.every(t => !t.active)) {
     ctx.save();
     ctx.font = 'bold 32px Arial';
