@@ -274,9 +274,9 @@ function generateDungeon() {
 function resetGame(isSubStage = false) {
   gameState = 'IDLE';
   angle = 45; 
-  power = 0;       // 【対策】パワーを完全にリセット
+  power = 0;       
   angleDir = 1; 
-  powerDir = 1;    // 【対策】パワーの進行方向も必ずプラス（増加方向）にリセット
+  powerDir = 1;    
   projectiles = [];
   if (!isSubStage) currentSubStage = 1; 
   generateDungeon();
@@ -308,7 +308,10 @@ function updatePhysics() {
     if (angle >= 85 || angle <= 5) angleDir *= -1;
   } else if (gameState === 'POWER') {
     power += 1.8 * powerDir;
-    if (power >= 100 || power <= 0) powerDir *= -1;
+    if (power >= 100 || powerDir && power <= 0) {
+      if (power >= 100) { power = 100; powerDir = -1; }
+      if (power <= 0) { power = 0; powerDir = 1; }
+    }
   } else if (gameState === 'FLY') {
     let allDead = true;
     
@@ -364,8 +367,8 @@ function updatePhysics() {
         actionBtn.textContent = "デコピン準備！";
         actionBtn.disabled = false;
         angle = 45; 
-        power = 0;       // 【対策】弾が余って次を撃つ時もパワーをリセット
-        powerDir = 1;    // 【対策】進行方向もリセット
+        power = 0;       
+        powerDir = 1;    
       } else {
         gameState = 'FINISH';
         instructionEl.textContent = "弾切れ...失敗！";
@@ -425,8 +428,8 @@ function draw() {
     }
 
     ctx.strokeStyle = '#fff'; ctx.strokeRect(10, 10, 150, 10);
-    ctx.fillStyle = `hsl(${power * 1.2}, 100%, 50%)`;
-    ctx.fillRect(10, 10, power * 1.5, 10);
+    ctx.fillStyle = `hsl(${Math.max(0, power) * 1.2}, 100%, 50%)`;
+    ctx.fillRect(10, 10, Math.max(0, power) * 1.5, 10);
   }
 
   requestAnimationFrame(draw);
@@ -434,7 +437,7 @@ function draw() {
 
 setInterval(updatePhysics, 16);
 
-// --- アクション処理（完全修正版） ---
+// --- アクション処理（完全鉄壁修正版） ---
 function handleAction(e) {
   if (e) e.preventDefault();
   
@@ -443,14 +446,18 @@ function handleAction(e) {
   lastActionTime = now;
 
   if (gameState === 'IDLE') {
+    // 角度フェーズに入る直前に、パワーを確実に「0」かつ「正の向き」に初期化
+    power = 0;
+    powerDir = 1;
     gameState = 'ANGLE';
     instructionEl.textContent = "タイミングよく押して「角度」を決定！";
     actionBtn.textContent = "角度ストップ！";
   } else if (gameState === 'ANGLE') {
+    // パワーフェーズに入る直前にも、必ず「5」から「正の向き」でスタートさせる
+    power = 5;       
+    powerDir = 1;    
     gameState = 'POWER';
-    power = 5;       // パワーフェーズ開始時は必ず5から安全にスタート
-    powerDir = 1;    // 進行方向も必ずプラス（増加）に固定
-    instructionEl.textContent = "タイミングよく押して「パワー」を決定！";
+    instructionEl.textContent = "タイミングよく押して「パワー`」を決定！";
     actionBtn.textContent = "デコピン発射！！！";
   } else if (gameState === 'POWER') {
     if (power <= 3) {
