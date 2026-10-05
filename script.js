@@ -236,6 +236,7 @@ let angleDir = 1, powerDir = 1;
 let projectiles = [];
 let targets = [];
 let shotsLeft = 0;
+let lastActionTime = 0; // 連打・重複タップ防止用タイマー
 
 const enemyTypes = [
   { id: 'slime', name: 'スライム', hpMult: 1.0, w: 30, h: 40, color: '#2ecc71' },
@@ -428,10 +429,15 @@ function draw() {
 
 setInterval(updatePhysics, 16);
 
-// --- アクション処理（安全装置追加） ---
+// --- アクション処理（タッチ・クリック重複防止ガード付き） ---
 function handleAction(e) {
   if (e) e.preventDefault();
   
+  // 連続タップによる誤爆（200ミリ秒以内の連続入力を完全無視）を防ぐガード
+  const now = Date.now();
+  if (now - lastActionTime < 250) return;
+  lastActionTime = now;
+
   if (gameState === 'IDLE') {
     gameState = 'ANGLE';
     instructionEl.textContent = "タイミングよく押して「角度」を決定！";
@@ -441,9 +447,9 @@ function handleAction(e) {
     instructionEl.textContent = "タイミングよく押して「パワー」を決定！";
     actionBtn.textContent = "デコピン発射！！！";
   } else if (gameState === 'POWER') {
-    // 【安全装置】もしパワーが0または極端に低い位置でバグって止まったら最低保証（15）にする
+    // 万が一パワーが低すぎていたら最低保証値を与える
     if (power <= 2) {
-      power = 15;
+      power = 20;
     }
 
     gameState = 'FLY';
@@ -468,10 +474,17 @@ function handleAction(e) {
   }
 }
 
-actionBtn.addEventListener('click', handleAction);
+// スマホでの重複発火を防ぐため、touchendをメインにし、クリックはPC用として分離
 actionBtn.addEventListener('touchend', (e) => {
   handleAction(e);
 }, { passive: false });
+
+actionBtn.addEventListener('click', (e) => {
+  // タッチデバイスで touchend の後に発生する click イベントを無効化する
+  // (スマホの場合は画面タッチだけで動くようにする)
+  if ('ontouchstart' in window) return;
+  handleAction(e);
+});
 
 changeScreen('screen-menu');
 draw();
