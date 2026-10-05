@@ -273,7 +273,10 @@ function generateDungeon() {
 
 function resetGame(isSubStage = false) {
   gameState = 'IDLE';
-  angle = 45; power = 0; angleDir = 1; powerDir = 1;
+  angle = 45; 
+  power = 0;       // 【対策】パワーを完全にリセット
+  angleDir = 1; 
+  powerDir = 1;    // 【対策】パワーの進行方向も必ずプラス（増加方向）にリセット
   projectiles = [];
   if (!isSubStage) currentSubStage = 1; 
   generateDungeon();
@@ -360,7 +363,9 @@ function updatePhysics() {
         instructionEl.textContent = `残り ${shotsLeft} 発！ボタンで角度を決めろ！`;
         actionBtn.textContent = "デコピン準備！";
         actionBtn.disabled = false;
-        angle = 45; power = 0;
+        angle = 45; 
+        power = 0;       // 【対策】弾が余って次を撃つ時もパワーをリセット
+        powerDir = 1;    // 【対策】進行方向もリセット
       } else {
         gameState = 'FINISH';
         instructionEl.textContent = "弾切れ...失敗！";
@@ -433,7 +438,6 @@ setInterval(updatePhysics, 16);
 function handleAction(e) {
   if (e) e.preventDefault();
   
-  // 300ミリ秒以内の連続入力を完全ガード
   const now = Date.now();
   if (now - lastActionTime < 300) return;
   lastActionTime = now;
@@ -444,12 +448,11 @@ function handleAction(e) {
     actionBtn.textContent = "角度ストップ！";
   } else if (gameState === 'ANGLE') {
     gameState = 'POWER';
-    power = 5; // 【重要】パワーフェーズに切り替わった瞬間に0ではなく5からスタートさせて誤爆を防ぐ
-    powerDir = 1;
+    power = 5;       // パワーフェーズ開始時は必ず5から安全にスタート
+    powerDir = 1;    // 進行方向も必ずプラス（増加）に固定
     instructionEl.textContent = "タイミングよく押して「パワー」を決定！";
     actionBtn.textContent = "デコピン発射！！！";
   } else if (gameState === 'POWER') {
-    // 万が一パワーが低すぎていたら最低保証値を与える
     if (power <= 3) {
       power = 20;
     }
@@ -476,7 +479,6 @@ function handleAction(e) {
   }
 }
 
-// スマホのタッチ専用にして二重発火を防止
 actionBtn.addEventListener('touchend', (e) => {
   handleAction(e);
 }, { passive: false });
