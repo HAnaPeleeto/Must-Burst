@@ -428,9 +428,9 @@ function draw() {
 
 setInterval(updatePhysics, 16);
 
-// --- スマホのタッチ操作対応のアクション処理 ---
+// --- アクション処理（安全装置追加） ---
 function handleAction(e) {
-  if (e) e.preventDefault(); // スマホでダブルタップズームやスクロールが暴発するのを防ぐ
+  if (e) e.preventDefault();
   
   if (gameState === 'IDLE') {
     gameState = 'ANGLE';
@@ -441,6 +441,11 @@ function handleAction(e) {
     instructionEl.textContent = "タイミングよく押して「パワー」を決定！";
     actionBtn.textContent = "デコピン発射！！！";
   } else if (gameState === 'POWER') {
+    // 【安全装置】もしパワーが0または極端に低い位置でバグって止まったら最低保証（15）にする
+    if (power <= 2) {
+      power = 15;
+    }
+
     gameState = 'FLY';
     instructionEl.textContent = "飛翔中...";
     actionBtn.disabled = true;
@@ -463,7 +468,6 @@ function handleAction(e) {
   }
 }
 
-// クリックとスマホのタッチ両方で反応するように設定
 actionBtn.addEventListener('click', handleAction);
 actionBtn.addEventListener('touchend', (e) => {
   handleAction(e);
